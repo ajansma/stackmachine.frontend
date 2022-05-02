@@ -1,0 +1,54 @@
+//-----------------------------------------------------------------
+//    Keywords and symbols of the language (tokens and lexemes)
+//-----------------------------------------------------------------
+
+// Relational operators and assignments
+
+greater_than			>
+greater_equals			>=
+less_than				<
+less_equals				<=
+equals					==
+not_equals				!=
+assignment				=
+
+// Arithmetic operators
+
+add						+
+subtract				-
+multiply				*
+divide					/
+remainder				%
+
+// Logic operators
+
+and						&&
+or						||
+not						!
+
+// Delimiters
+
+dot						.
+comma					,
+semicolon				;
+open_parenthesis		(
+closed_parenthesis		)
+open_square_bracket		[
+closed_square_bracket	]
+open_curly_bracket		{
+closed_curly_bracket	}
+
+// Keywords
+
+boolean					boolean
+do						do
+else					else
+false					false
+float					float
+if						if
+int						int
+main					main
+print					print
+while					while
+true					true
+void					void

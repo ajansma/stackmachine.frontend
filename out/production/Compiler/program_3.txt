@@ -1,0 +1,15 @@
+void main {
+   int a, b, c, d;
+   int d = 2;
+
+   /*
+    * this program declares variable 'd' two times, 'x' is not declared
+    */
+
+   a = 1;
+   b = 2;
+   c = (25 * (2 + a)) / (2 * b);
+   d = a + 2*b + c;
+
+   x = a + b + c + d;
+}
