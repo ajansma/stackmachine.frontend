@@ -48,7 +48,7 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     private Token token;
     private LexicalAnalyzer lexicalAnalyzer;
     private Map<String, DataType> symbolTable;
-    private Map<String, Object> values;
+    private Map<String, Object> values; // added this to keep track of variables' values
     private List<String> code;
     private String compile;
     private int label;
@@ -114,6 +114,9 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         instructions();
 
         match("closed_curly_bracket");
+
+        // add end to intermediate code
+        this.code.add("halt");
     }
 
     private void declarations(){
@@ -187,11 +190,17 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     private void optional_assignment(Identifier id){
         // if =
         if(this.token.getName().equals("assignment")){
+            this.code.add("lvalue " + id.getLexeme());
             // match =
             match("assignment");
 
             // call logic expression
             logic_expression();
+
+            // add intermediate code
+            this.code.add("=");
+
+            // add value
             Object a = this.stack.pop();
             addValue(id, a);
         }
@@ -225,9 +234,20 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         else if(this.token.getName().equals("id")){
             Identifier id = (Identifier) this.token;
             match("id");
+
+            // add intermediate code
+            this.code.add("lvalue " + id.getLexeme());
+
             match("assignment");
+
             logic_expression();
+
+            // add value to table
             addValue(id, (int)stack.pop());
+
+            // add intermediate code
+            this.code.add("=");
+
             match("semicolon");
         }
 
@@ -391,23 +411,42 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         }
         else if(this.token.getName().equals("id")){
             Identifier id = (Identifier) this.token;
+
             int number = (int) values.get(id.getLexeme());
             match("id");
+
+            // add to stack
             this.postfix = this.postfix + " " + number + " ";
             this.stack.push(number);
+
+            // add intermediate code
+            this.code.add("rvalue " + id.getLexeme());
         }
         else if (this.token.getName().equals("int")) {
             // add integer to token
             IntegerNumber number = (IntegerNumber) this.token;
+
             // add integer to stack
             this.postfix = this.postfix + " " + number.getValue() + " ";
             this.stack.push(number.getValue());
+
+            // add intermediate code
+            this.code.add("push " + number.getValue());
+
+            // match
             match("int");
         }
         else if (this.token.getName().equals("float")){
             RealNumber number = (RealNumber) this.token;
+
+            // add to stack
             this.postfix = this.postfix + " " + number.getValue() + " ";
             this.stack.push(number.getValue());
+
+            // add intermediate code
+            this.code.add("push " + number.getValue());
+
+            // match
             match("float");
         }
         else {
@@ -427,15 +466,26 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
             factor();
             // add to token
             this.postfix = this.postfix + " * ";
+
+            // add to intermediate code
+            this.code.add("*");
+
             // pop off stack and perform operation
             int num1 = (int) this.stack.pop();
             int num2 = (int) this.stack.pop();
             this.stack.push(num2 * num1);
+            int val = num2 * num1;
             moreFactors();
+
         } else if (this.token.getName().equals("divide")) {
             match("divide");
             factor();
+            // add to postfix
             this.postfix = this.postfix + " / ";
+
+            // add to intermediate code
+            this.code.add("/");
+
             // pop off the stack
             int num1 = (int) this.stack.pop();
             int num2 = (int) this.stack.pop();
@@ -445,11 +495,22 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         } else if (this.token.getName().equals("remainder")) {
             match("remainder");
             factor();
+            // add to postfix
             this.postfix = this.postfix + " % ";
+
+            // add to intermediate code
+            this.code.add("%");
+
             // pop off the stack
             int num1 = (int) this.stack.pop();
             int num2 = (int) this.stack.pop();
             this.stack.push(num2 % num1);
+            int val = num2 % num1;
+
+            // add to intermediate code
+            this.code.add("push " + val);
+
+            // next call
             moreFactors();
         }
     }
@@ -476,25 +537,39 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
             term();
             // add the + to the token
             this.postfix = this.postfix + " + ";
+
+            // add + to intermediate code
+            this.code.add("+");
+
             // pop off the stack
             int num1 = (int) this.stack.pop();
             int num2 = (int) this.stack.pop();
             int newNum = num2 + num1;
+            // push to stack
             this.stack.push(newNum);
+
             moreTerms();
         } else if (this.token.getName().equals("subtract")) {
             match("subtract");
             term();
             // add - to the token
             this.postfix = this.postfix + " - ";
+
+            // add to intermediate code
+            this.code.add("-");
+
             // pop the two top numbers off the stack
             int num1 = (int) this.stack.pop();
             int num2 = (int) this.stack.pop();
+
+            // add to stack
             this.stack.push(num2 - num1);
+
             moreTerms();
         }
     }
 
+    // this function assigns variables their value
     private void addValue(Identifier id, Object a){
         if(this.symbolTable.get(id.getLexeme()) != null){
             this.values.put(id.getLexeme(), a);
