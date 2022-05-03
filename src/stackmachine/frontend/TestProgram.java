@@ -51,7 +51,7 @@ public class TestProgram {
     public static void main(String[] args) {
         boolean verbose = true;
 
-        String program = "src/program_4.txt";
+        String program = "src/program_5.txt";
 
         if (verbose)
             showTokens(program);

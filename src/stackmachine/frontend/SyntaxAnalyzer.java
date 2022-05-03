@@ -104,6 +104,13 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         return symbols;
     }
 
+    // generates a new label for intermediate code
+    private int newLabel(){
+        int newLabel = label;
+        label++;
+        return newLabel;
+    }
+
     // Java code for the grammar rules and the semantic actions
     private void program(){
         match("void");
@@ -252,11 +259,22 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         }
 
         else if(this.token.getName().equals("if")){
+            // if (condition)
             match("if");
+
             match("open_parenthesis");
+
             logic_expression();
+
             match("closed_parenthesis");
+
+            int out = newLabel();
+            this.code.add("goFalse " + out);
+
             instruction();
+
+            this.code.add("label " + out);
+
             // optional else
             if(this.token.getName().equals("else")){
                 match("else");
@@ -265,26 +283,41 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         }
 
         else if(this.token.getName().equals("while")){
+            int test = newLabel();
             match("while");
             match("open_parenthesis");
+            this.code.add("label_" + test);
             logic_expression();
+            int out = newLabel();
+            this.code.add("gofalse label_" + out);
             match("closed_parenthesis");
             instruction();
+            this.code.add("goto label" + test);
+            this.code.add("label_" + out);
         }
 
         else if(this.token.getName().equals("do")){
             match("do");
+            int test = newLabel();
+            this.code.add("label_" + test);
+
             instruction();
             match("while");
             match("open_parenthesis");
             logic_expression();
             match("closed_parenthesis");
+            int out = newLabel();
+            this.code.add("gofalse label_" + out);
+            this.code.add("goto label_" + test);
+            this.code.add("label_" + out);
             match("semicolon");
         }
 
         else if(this.token.getName().equals("print")){
             match("print");
             match("open_parenthesis");
+            Identifier id = (Identifier) this.token;
+            this.code.add("print " + id.getLexeme());
             match("id");
             match("closed_parenthesis");
             match("semicolon");
@@ -362,35 +395,42 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         // check if relational operator is involved
         String tokenName = this.token.getName();
         if(tokenName.equals("less_than") || tokenName.equals("less_equals") || tokenName.equals("greater_than") || tokenName.equals("greater_equals") || tokenName.equals("equals") || tokenName.equals("not_equals")){
-            relational_operator();
+            String operator = relational_operator();
             expression();
+            this.code.add(operator);
         }
     }
 
     // relational-operator    ->  < | <= | > | >= | == | !=
-    private void relational_operator(){
+    private String relational_operator(){
         if(this.token.getName().equals("less_than")){
             match("less_than");
+            return "<";
         }
 
         else if(this.token.getName().equals("less_equals")){
             match("less_equals");
+            return "<=";
         }
 
         else if(this.token.getName().equals("greater_than")){
             match("greater_than");
+            return ">";
         }
 
         else if(this.token.getName().equals("greater_equals")){
             match("greater_equals");
+            return ">=";
         }
 
         else if(this.token.equals("equals")){
             match("equals");
+            return "=";
         }
 
         else if(this.token.equals("not_equals")){
             match("not_equals");
+            return "!=";
         }
 
         // compiler error
@@ -399,6 +439,7 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
                     this.lexicalAnalyzer.getLine() + ", " +
                     "relational operator" + " expected";
         }
+        return "";
     }
 
     // factor → ( expression ) |
