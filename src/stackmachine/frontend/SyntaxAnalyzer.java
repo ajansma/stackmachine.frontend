@@ -268,56 +268,88 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
 
             match("closed_parenthesis");
 
+            // intermediate code
             int out = newLabel();
-            this.code.add("goFalse " + out);
+            this.code.add("goFalse label_" + out);
 
             instruction();
 
-            this.code.add("label " + out);
-
             // optional else
             if(this.token.getName().equals("else")){
+                // intermediate code
+                int label_else = newLabel();
+                this.code.add("goto label_" + label_else);
+                this.code.add("label_" + out);
+
                 match("else");
+
                 instruction();
+
+                // intermediate code
+                this.code.add("label_" + label_else);
+            }
+
+            else{
+                // if intermediate code
+                this.code.add("label " + out);
             }
         }
 
         else if(this.token.getName().equals("while")){
             int test = newLabel();
+
             match("while");
             match("open_parenthesis");
+
+            // intermediate code
             this.code.add("label_" + test);
+
             logic_expression();
+
+            // intermediate code
             int out = newLabel();
             this.code.add("gofalse label_" + out);
+
             match("closed_parenthesis");
             instruction();
-            this.code.add("goto label" + test);
+
+            // intermediate code
+            this.code.add("goto label_" + test);
             this.code.add("label_" + out);
         }
 
         else if(this.token.getName().equals("do")){
             match("do");
+
+            // intermediate code
             int test = newLabel();
             this.code.add("label_" + test);
 
             instruction();
             match("while");
             match("open_parenthesis");
+
             logic_expression();
+
             match("closed_parenthesis");
+
+            // intermediate code
             int out = newLabel();
             this.code.add("gofalse label_" + out);
             this.code.add("goto label_" + test);
             this.code.add("label_" + out);
+
             match("semicolon");
         }
 
         else if(this.token.getName().equals("print")){
             match("print");
             match("open_parenthesis");
+
+            // intermediate code
             Identifier id = (Identifier) this.token;
             this.code.add("print " + id.getLexeme());
+
             match("id");
             match("closed_parenthesis");
             match("semicolon");
